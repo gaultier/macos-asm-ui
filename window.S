@@ -14,15 +14,20 @@
 #define STACK_ALLOC_NAME 56
 #define STACK_NS_WINDOW_CLASS 64
 #define STACK_NS_WINDOW_ID 72
+#define STACK_INIT_WITH_CONTENT_RECT_NAME 80
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_NS_WINDOW_ID
+#define STACK_LAST_SLOT STACK_INIT_WITH_CONTENT_RECT_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
 #if STACK_SIZE % 16 != 0
 #error "stack size must be 16-byte aligned"
 #endif
+
+.data
+.p2align 3
+RECT: .double 100.0, 100.0, 400.0, 300.0    ; x, y, width, height
 
 .macro LEA reg, sym
       adrp \reg, \sym@PAGE
@@ -76,6 +81,7 @@
 NSApplication.str: .asciz "NSApplication"
 NSWindow.str: .asciz "NSWindow"
 alloc.str: .asciz "alloc"
+initWithContentRect.str: .asciz "initWithContentRect:styleMask:backing:defer:"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
 run.str: .asciz "run"
@@ -151,6 +157,24 @@ _main:
 	str x0, [sp, #STACK_NS_WINDOW_ID]
 	LOG_PTR_LN x0
 
+  ; Register name.
+	SEL_REGISTER_NAME initWithContentRect.str
+	str x0, [sp, #STACK_INIT_WITH_CONTENT_RECT_NAME]
+	LOG_PTR_LN x0
+
+	; Initiate the window with a content rectangle.
+	ldr x0, [sp, #STACK_NS_WINDOW_ID]
+	ldr x1, [sp, #STACK_INIT_WITH_CONTENT_RECT_NAME]
+	LEA x8, RECT
+	ldp d0, d1, [x8]
+	ldp d2, d3, [x8, #16]
+	mov x2, #11 ; Flags
+	mov x3, #2 ; NSBackingStoreBuffered
+	mov w4, 0 ; false
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+	
 
 	; Tell the application to run. This does not return: terminating calls exit().
 	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_ID, STACK_RUN_NAME
