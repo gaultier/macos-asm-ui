@@ -19,9 +19,10 @@
 #define STACK_ACTIVATE_NAME 96
 #define STACK_NS_BUTTON_CLASS 104
 #define STACK_INIT_NAME 112
+#define STACK_NS_BUTTON_ID 120
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_INIT_NAME
+#define STACK_LAST_SLOT STACK_NS_BUTTON_ID
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -187,9 +188,21 @@ _main:
 	str x0, [sp, #STACK_NS_BUTTON_CLASS]
 	LOG_PTR_LN x0
 
+  ; Register name.
 	SEL_REGISTER_NAME init.str
 	str x0, [sp, #STACK_INIT_NAME]
 	LOG_PTR_LN x0
+
+
+	; Allocate a button.
+	OBJC_MSG_SEND_2 STACK_NS_BUTTON_CLASS, STACK_ALLOC_NAME
+	str x0, [sp, #STACK_NS_BUTTON_ID]
+
+	; Init the button.
+	OBJC_MSG_SEND_2 STACK_NS_BUTTON_ID, STACK_INIT_NAME
+	str x0, [sp, #STACK_NS_BUTTON_ID]
+	
+
 
 	; Show the window. -makeKeyAndOrderFront: returns void, so do NOT nil-check x0.
 	SEL_REGISTER_NAME makeKeyAndOrderFront.str
