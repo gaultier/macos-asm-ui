@@ -44,6 +44,10 @@
 	b.eq .die
 .endm
 
+.macro SEL_REGISTER_NAME arg0
+	LEA x0, \arg0
+	bl _sel_registerName
+.endm
 
 ; Calls `printf("%#llx\n", num)`.
 ; Consumes: `x0`.
@@ -88,16 +92,12 @@ _main:
 	LOG_PTR_LN x0
 
 	; Register the `sharedApplication` name and store it.
-	LEA x0, sharedApplication.str
-	bl _sel_registerName
-	; `sel_registerName` cannot fail so do not check the return value.
+	SEL_REGISTER_NAME sharedApplication.str
 	str x0, [sp, #STACK_SHARED_APPLICATION_NAME]
 	LOG_PTR_LN x0
 
 	; Register the `setActivationPolicy` name and store it.
-	LEA x0, setActivationPolicy.str
-	bl _sel_registerName
-	; `sel_registerName` cannot fail so do not check the return value.
+	SEL_REGISTER_NAME setActivationPolicy.str
 	str x0, [sp, #STACK_ACTIVATION_POLICY_NAME]
 	LOG_PTR_LN x0
 
