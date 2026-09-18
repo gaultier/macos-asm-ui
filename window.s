@@ -8,10 +8,13 @@
 
 .cstring
 
-// STR_NSString: .asciz "NSString"
-
+; AppKit constants.
 NSApplication.str: .asciz "NSApplication"
 sharedApplication.str: .asciz "sharedApplication"
+setActivationPolicy.str: .asciz "setActivationPolicy"
+
+
+; App constants.
 UNKNOWN_ERROR.str: .asciz "unknown error"
 OK.str: .asciz "ok"
 
@@ -34,20 +37,37 @@ _main:
 	b.eq .die
 	str x0, [sp]
 
-	; Register `sharedApplication` and store it in `[sp + 8]`.
+	; Register the `sharedApplication` name and store it in `[sp + 8]`.
 	LEA x0, sharedApplication.str
 	bl _sel_registerName
 	cmp x0, 0
 	b.eq .die
 	str x0, [sp, 8]
 
-	; Send the message.
-	ldr x0, [sp]
-	ldr x1, [sp, 8]
-	bl _objc_msgSend
+	; Register the `setActivationPolicy` name and store it in `[sp + 16]`.
+	LEA x0, setActivationPolicy.str
+	bl _sel_registerName
 	cmp x0, 0
 	b.eq .die
 	str x0, [sp, 16]
+
+	; Send the message to create an `NSApplication` instance and store its id in `[sp + 24].
+	ldr x0, [sp] ;`NSApplication` id
+	ldr x1, [sp, 8] ; `sharedApplication` id
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+	str x0, [sp, 24]
+
+	; Set the activation policy for our application to be allowed to have a window.
+	ldr x0, [sp, 24] ; app id
+	ldr x1, [sp, 16] ; `setActivationPolicy` id
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+	; do not store the result.
+
+
 
 
 	LEA x0, OK.str
