@@ -23,9 +23,10 @@
 #define STACK_STRING_WITH_UTF8_STRING_NAME 128
 #define STACK_NS_STRING_CLASS 136
 #define STACK_SET_TITLE_NAME 144
+#define STACK_NS_STRING_HELLO 152
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_SET_TITLE_NAME
+#define STACK_LAST_SLOT STACK_NS_STRING_HELLO
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -51,11 +52,33 @@ RECT: .double 100.0, 100.0, 400.0, 300.0    ; x, y, width, height
 	b.eq .die
 .endm
 
-; Sends a message with 1 argument.
-.macro OBJC_MSG_SEND_3 arg0, arg1, arg2
+.macro OBJC_MSG_SEND_3_VOID_NUM arg0, arg1, arg2
 	ldr x0, [sp, #\arg0]
 	ldr x1, [sp, #\arg1]
 	mov x2, #\arg2
+	bl _objc_msgSend
+.endm
+
+.macro OBJC_MSG_SEND_3_NUM arg0, arg1, arg2
+	ldr x0, [sp, #\arg0]
+	ldr x1, [sp, #\arg1]
+	mov x2, \arg2
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+.endm
+
+.macro OBJC_MSG_SEND_3_VOID arg0, arg1, arg2
+	ldr x0, [sp, #\arg0]
+	ldr x1, [sp, #\arg1]
+	ldr x2, [sp, #\arg2]
+	bl _objc_msgSend
+.endm
+
+.macro OBJC_MSG_SEND_3 arg0, arg1, arg2
+	ldr x0, [sp, #\arg0]
+	ldr x1, [sp, #\arg1]
+	ldr x2, [sp, #\arg2]
 	bl _objc_msgSend
 	cmp x0, 0
 	b.eq .die
@@ -148,7 +171,7 @@ _main:
 	LOG_PTR_LN x0
 
 	; Set the activation policy for our application to be allowed to have a window.
-	OBJC_MSG_SEND_3 STACK_NS_APPLICATION_ID, STACK_ACTIVATION_POLICY_NAME, NSApplicationActivationPolicyRegular
+	OBJC_MSG_SEND_3_NUM STACK_NS_APPLICATION_ID, STACK_ACTIVATION_POLICY_NAME, #NSApplicationActivationPolicyRegular
 	cmp x0, 0
 	b.eq .die
 
@@ -225,6 +248,13 @@ _main:
 	OBJC_GET_CLASS NSString.str
 	str x0, [sp, #STACK_NS_STRING_CLASS]
 	LOG_PTR_LN x0
+
+	LEA x3, Hello.str
+	OBJC_MSG_SEND_3_NUM STACK_NS_STRING_CLASS, STACK_STRING_WITH_UTF8_STRING_NAME, x3
+	str x0, [sp, #STACK_NS_STRING_HELLO]
+
+	OBJC_MSG_SEND_3_VOID STACK_NS_BUTTON_ID, STACK_SET_TITLE_NAME, STACK_NS_STRING_HELLO
+
 
 	; Show the window. -makeKeyAndOrderFront: returns void, so do NOT nil-check x0.
 	SEL_REGISTER_NAME makeKeyAndOrderFront.str
