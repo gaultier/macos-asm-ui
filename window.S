@@ -90,6 +90,7 @@ run.str: .asciz "run"
 makeKeyAndOrderFront.str: .asciz "makeKeyAndOrderFront:"
 activateIgnoringOtherApps.str: .asciz "activateIgnoringOtherApps:"
 #define NSApplicationActivationPolicyRegular 0
+#define NSBackingStoreBuffered 2
 
 ; App constants.
 UNKNOWN_ERROR.str: .asciz "unknown error"
@@ -167,7 +168,7 @@ _main:
 	ldp d0, d1, [x8]
 	ldp d2, d3, [x8, #16]
 	mov x2, #11 ; Flags
-	mov x3, #2 ; NSBackingStoreBuffered
+	mov x3, #NSBackingStoreBuffered
 	mov w4, #0 ; false
 	bl _objc_msgSend
 	cmp x0, 0
