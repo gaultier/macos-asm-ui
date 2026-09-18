@@ -2,7 +2,7 @@
 
 ; Stack slot offsets, relative to `sp`. Brackets are written at the use site so
 ; the values stay plain numbers usable in arithmetic and in the guard below.
-#define STACK_SIZE 128
+#define STACK_SIZE 256
 #define STACK_FUNCTION_SAVE 16
 #define STACK_SCRATCH 0
 #define STACK_NS_APPLICATION_CLASS 8
@@ -17,9 +17,11 @@
 #define STACK_INIT_WITH_CONTENT_RECT_NAME 80
 #define STACK_MAKE_KEY_AND_ORDER_FRONT_NAME 88
 #define STACK_ACTIVATE_NAME 96
+#define STACK_NS_BUTTON_CLASS 104
+#define STACK_INIT_NAME 112
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_ACTIVATE_NAME
+#define STACK_LAST_SLOT STACK_INIT_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -82,7 +84,9 @@ RECT: .double 100.0, 100.0, 400.0, 300.0    ; x, y, width, height
 ; AppKit constants.
 NSApplication.str: .asciz "NSApplication"
 NSWindow.str: .asciz "NSWindow"
+NSButton.str: .asciz "NSButton"
 alloc.str: .asciz "alloc"
+init.str: .asciz "init"
 initWithContentRect.str: .asciz "initWithContentRect:styleMask:backing:defer:"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
@@ -175,6 +179,16 @@ _main:
 	b.eq .die
 	; -init may return a different object than -alloc: keep the result.
 	str x0, [sp, #STACK_NS_WINDOW_ID]
+	LOG_PTR_LN x0
+
+
+	; Locate `NSButton` class and store it.
+	OBJC_GET_CLASS NSButton.str
+	str x0, [sp, #STACK_NS_BUTTON_CLASS]
+	LOG_PTR_LN x0
+
+	SEL_REGISTER_NAME init.str
+	str x0, [sp, #STACK_INIT_NAME]
 	LOG_PTR_LN x0
 
 	; Show the window. -makeKeyAndOrderFront: returns void, so do NOT nil-check x0.
