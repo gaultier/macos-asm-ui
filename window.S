@@ -34,6 +34,16 @@
 	b.eq .die
 .endm
 
+; Sends a message with 1 argument.
+.macro OBJC_MSG_SEND_3 arg0, arg1, arg2
+	ldr x0, [sp, #\arg0]
+	ldr x1, [sp, #\arg1]
+	mov x2, #\arg2
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+.endm
+
 
 ; Calls `printf("%#llx\n", num)`.
 ; Consumes: `x0`.
@@ -52,16 +62,13 @@ NSApplication.str: .asciz "NSApplication"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
 run.str: .asciz "run"
-.set NSApplicationActivationPolicyRegular, 0
+#define NSApplicationActivationPolicyRegular 0
 
 ; App constants.
 UNKNOWN_ERROR.str: .asciz "unknown error"
 UNREACHABLE.str: .asciz "unreachable"
 FMT_NUM.str: .asciz "%lld\n"
 FMT_PTR.str: .asciz "%#llx\n"
-
-
-.data
 
 
 .text
@@ -102,20 +109,14 @@ _main:
 	str x0, [sp, #STACK_RUN_NAME]
 	LOG_PTR_LN x0
 
-	; Send the message to create an `NSApplication` instance and store its id.
-	ldr x0, [sp, #STACK_NS_APPLICATION_CLASS]
-	ldr x1, [sp, #STACK_SHARED_APPLICATION_NAME]
-	bl _objc_msgSend
+	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_CLASS, STACK_SHARED_APPLICATION_NAME
 	cmp x0, 0
 	b.eq .die
 	str x0, [sp, #STACK_NS_APPLICATION_ID]
 	LOG_PTR_LN x0
 
 	; Set the activation policy for our application to be allowed to have a window.
-	ldr x0, [sp, #STACK_NS_APPLICATION_ID]
-	ldr x1, [sp, #STACK_ACTIVATION_POLICY_NAME]
-	mov x2, #NSApplicationActivationPolicyRegular
-	bl _objc_msgSend
+	OBJC_MSG_SEND_3 STACK_NS_APPLICATION_ID, STACK_ACTIVATION_POLICY_NAME, NSApplicationActivationPolicyRegular
 	cmp x0, 0
 	b.eq .die
 	; do not store the result.
