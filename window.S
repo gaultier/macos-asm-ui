@@ -56,7 +56,7 @@ run.str: .asciz "run"
 
 ; App constants.
 UNKNOWN_ERROR.str: .asciz "unknown error"
-OK.str: .asciz "ok"
+UNREACHABLE.str: .asciz "unreachable"
 FMT_NUM.str: .asciz "%lld\n"
 FMT_PTR.str: .asciz "%#llx\n"
 
@@ -68,7 +68,7 @@ FMT_PTR.str: .asciz "%#llx\n"
 
 .global _main
 _main:
-	sub sp, sp, #STACK_SIZE ; 16B saved pair!
+	sub sp, sp, #STACK_SIZE
 	stp x29, x30, [sp, #STACK_SIZE-STACK_FUNCTION_SAVE]  ; save frame pointer + return address
 	add x29, sp, #STACK_SIZE-STACK_FUNCTION_SAVE         ; establish new frame pointer
 
@@ -127,10 +127,10 @@ _main:
 
 
 	; the end
-	LEA x0, OK.str
+	LEA x0, UNREACHABLE.str
 	bl _puts
 
-	mov w0, #0 ; exit code
+	mov w0, #1 ; exit code
 	ldp x29, x30, [sp, #STACK_SIZE-STACK_FUNCTION_SAVE] ; restore frame pointer and return address.
 	add sp, sp, #STACK_SIZE ; reset frame pointer.
 	ret
