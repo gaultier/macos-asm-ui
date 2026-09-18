@@ -12,9 +12,10 @@
 #define STACK_RUN_NAME 40
 #define STACK_NS_WINDOW_NAME 48
 #define STACK_ALLOC_NAME 56
+#define STACK_NS_WINDOW_CLASS 64
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_NS_ALLOC_NAME
+#define STACK_LAST_SLOT STACK_NS_WINDOW_CLASS
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -49,6 +50,13 @@
 .macro SEL_REGISTER_NAME arg0
 	LEA x0, \arg0
 	bl _sel_registerName
+.endm
+
+.macro OBJC_GET_CLASS arg0
+	LEA x0, \arg0
+	bl _objc_getClass
+	cmp x0, 0
+	b.eq .die
 .endm
 
 ; Calls `printf("%#llx\n", num)`.
@@ -89,10 +97,7 @@ _main:
 	add x29, sp, #STACK_SIZE-STACK_FUNCTION_SAVE         ; establish new frame pointer
 
 	; Locate `NSApplication` class and store it.
-	LEA x0, NSApplication.str
-	bl _objc_getClass
-	cmp x0, 0
-	b.eq .die
+	OBJC_GET_CLASS NSApplication.str
 	str x0, [sp, #STACK_NS_APPLICATION_CLASS]
 	LOG_PTR_LN x0
 
@@ -134,6 +139,11 @@ _main:
 	str x0, [sp, #STACK_ALLOC_NAME]
 	LOG_PTR_LN x0
 	
+	; Locate `NSWindow` class and store it.
+	OBJC_GET_CLASS NSWindow.str
+	str x0, [sp, #STACK_NS_WINDOW_CLASS]
+	LOG_PTR_LN x0
+
 
 	; Tell the application to run. This does not return: terminating calls exit().
 	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_ID, STACK_RUN_NAME
