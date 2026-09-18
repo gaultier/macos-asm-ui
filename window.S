@@ -73,7 +73,7 @@ _main:
 	LOG_PTR_LN x0
 
 	; Send the message to create an `NSApplication` instance and store its id.
-	ldr x0, STACK_NS_APPLICATION_ID
+	ldr x0, STACK_NS_APPLICATION_CLASS
 	ldr x1, STACK_SHARED_APPLICATION_ID
 	bl _objc_msgSend
 	cmp x0, 0
