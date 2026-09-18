@@ -11,9 +11,10 @@
 #define STACK_NS_APPLICATION_ID 32
 #define STACK_RUN_NAME 40
 #define STACK_NS_WINDOW_NAME 48
+#define STACK_ALLOC_NAME 56
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_NS_WINDOW_NAME
+#define STACK_LAST_SLOT STACK_NS_ALLOC_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -65,6 +66,7 @@
 ; AppKit constants.
 NSApplication.str: .asciz "NSApplication"
 NSWindow.str: .asciz "NSWindow"
+alloc.str: .asciz "alloc"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
 run.str: .asciz "run"
@@ -125,6 +127,11 @@ _main:
   ; Register name.
 	SEL_REGISTER_NAME NSWindow.str
 	str x0, [sp, #STACK_NS_WINDOW_NAME]
+	LOG_PTR_LN x0
+
+  ; Register name.
+	SEL_REGISTER_NAME alloc.str
+	str x0, [sp, #STACK_ALLOC_NAME]
 	LOG_PTR_LN x0
 	
 
