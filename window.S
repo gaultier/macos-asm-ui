@@ -15,9 +15,11 @@
 #define STACK_NS_WINDOW_CLASS 64
 #define STACK_NS_WINDOW_ID 72
 #define STACK_INIT_WITH_CONTENT_RECT_NAME 80
+#define STACK_MAKE_KEY_AND_ORDER_FRONT_NAME 88
+#define STACK_ACTIVATE_NAME 96
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_INIT_WITH_CONTENT_RECT_NAME
+#define STACK_LAST_SLOT STACK_ACTIVATE_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -85,6 +87,8 @@ initWithContentRect.str: .asciz "initWithContentRect:styleMask:backing:defer:"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
 run.str: .asciz "run"
+makeKeyAndOrderFront.str: .asciz "makeKeyAndOrderFront:"
+activateIgnoringOtherApps.str: .asciz "activateIgnoringOtherApps:"
 #define NSApplicationActivationPolicyRegular 0
 
 ; App constants.
@@ -135,12 +139,6 @@ _main:
 	cmp x0, 0
 	b.eq .die
 
-
-  ; Register name.
-	SEL_REGISTER_NAME NSWindow.str
-	str x0, [sp, #STACK_NS_WINDOW_NAME]
-	LOG_PTR_LN x0
-
   ; Register name.
 	SEL_REGISTER_NAME alloc.str
 	str x0, [sp, #STACK_ALLOC_NAME]
@@ -170,11 +168,30 @@ _main:
 	ldp d2, d3, [x8, #16]
 	mov x2, #11 ; Flags
 	mov x3, #2 ; NSBackingStoreBuffered
-	mov w4, 0 ; false
+	mov w4, #0 ; false
 	bl _objc_msgSend
 	cmp x0, 0
 	b.eq .die
-	
+	; -init may return a different object than -alloc: keep the result.
+	str x0, [sp, #STACK_NS_WINDOW_ID]
+	LOG_PTR_LN x0
+
+	; Show the window. -makeKeyAndOrderFront: returns void, so do NOT nil-check x0.
+	SEL_REGISTER_NAME makeKeyAndOrderFront.str
+	str x0, [sp, #STACK_MAKE_KEY_AND_ORDER_FRONT_NAME]
+	ldr x0, [sp, #STACK_NS_WINDOW_ID]
+	ldr x1, [sp, #STACK_MAKE_KEY_AND_ORDER_FRONT_NAME]
+	mov x2, #0 ; nil sender
+	bl _objc_msgSend
+
+	; Bring the whole app forward. Also returns void.
+	SEL_REGISTER_NAME activateIgnoringOtherApps.str
+	str x0, [sp, #STACK_ACTIVATE_NAME]
+	ldr x0, [sp, #STACK_NS_APPLICATION_ID]
+	ldr x1, [sp, #STACK_ACTIVATE_NAME]
+	mov x2, #1 ; YES
+	bl _objc_msgSend
+
 
 	; Tell the application to run. This does not return: terminating calls exit().
 	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_ID, STACK_RUN_NAME
