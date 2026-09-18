@@ -10,9 +10,10 @@
 #define STACK_ACTIVATION_POLICY_NAME 24
 #define STACK_NS_APPLICATION_ID 32
 #define STACK_RUN_NAME 40
+#define STACK_NS_WINDOW_NAME 48
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_RUN_NAME
+#define STACK_LAST_SLOT STACK_NS_WINDOW_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -63,6 +64,7 @@
 
 ; AppKit constants.
 NSApplication.str: .asciz "NSApplication"
+NSWindow.str: .asciz "NSWindow"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
 run.str: .asciz "run"
@@ -79,6 +81,7 @@ FMT_PTR.str: .asciz "%#llx\n"
 
 .global _main
 _main:
+	; Prologue.
 	sub sp, sp, #STACK_SIZE
 	stp x29, x30, [sp, #STACK_SIZE-STACK_FUNCTION_SAVE]  ; save frame pointer + return address
 	add x29, sp, #STACK_SIZE-STACK_FUNCTION_SAVE         ; establish new frame pointer
@@ -91,24 +94,22 @@ _main:
 	str x0, [sp, #STACK_NS_APPLICATION_CLASS]
 	LOG_PTR_LN x0
 
-	; Register the `sharedApplication` name and store it.
+  ; Register name.
 	SEL_REGISTER_NAME sharedApplication.str
 	str x0, [sp, #STACK_SHARED_APPLICATION_NAME]
 	LOG_PTR_LN x0
 
-	; Register the `setActivationPolicy` name and store it.
+  ; Register name.
 	SEL_REGISTER_NAME setActivationPolicy.str
 	str x0, [sp, #STACK_ACTIVATION_POLICY_NAME]
 	LOG_PTR_LN x0
 
-
-	; Register the `run` name and store it.
-	LEA x0, run.str
-	bl _sel_registerName
-	; `sel_registerName` cannot fail so do not check the return value.
+  ; Register name.
+	SEL_REGISTER_NAME run.str
 	str x0, [sp, #STACK_RUN_NAME]
 	LOG_PTR_LN x0
 
+	; Create a `NSApplication` instance.
 	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_CLASS, STACK_SHARED_APPLICATION_NAME
 	cmp x0, 0
 	b.eq .die
@@ -119,12 +120,16 @@ _main:
 	OBJC_MSG_SEND_3 STACK_NS_APPLICATION_ID, STACK_ACTIVATION_POLICY_NAME, NSApplicationActivationPolicyRegular
 	cmp x0, 0
 	b.eq .die
-	; do not store the result.
 
 
-	; Send the message to run. This does not return: terminating calls exit().
+  ; Register name.
+	SEL_REGISTER_NAME NSWindow.str
+	str x0, [sp, #STACK_NS_WINDOW_NAME]
+	LOG_PTR_LN x0
+	
+
+	; Tell the application to run. This does not return: terminating calls exit().
 	OBJC_MSG_SEND_2 STACK_NS_APPLICATION_ID, STACK_RUN_NAME
-
 
 
 	; the end
