@@ -1,12 +1,13 @@
 ; clang window.s -framework Cocoa
 
-#define STACK_SIZE 64
+#define STACK_SIZE 128
 #define STACK_FUNCTION_SAVE 16
 #define STACK_SCRATCH [sp, 0]
 #define STACK_NS_APPLICATION_CLASS [sp, 8]
-#define STACK_SHARED_APPLICATION_ID [sp, 16]
-#define STACK_ACTIVATION_POLICY_ID [sp, 24]
+#define STACK_SHARED_APPLICATION_NAME [sp, 16]
+#define STACK_ACTIVATION_POLICY_NAME [sp, 24]
 #define STACK_NS_APPLICATION_ID [sp, 32]
+#define STACK_RUN_NAME [sp, 40]
 
 .macro LEA reg, sym
       adrp \reg, \sym@PAGE
@@ -30,6 +31,7 @@
 NSApplication.str: .asciz "NSApplication"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
+run.str: .asciz "run"
 .set NSApplicationActivationPolicyRegular, 0
 
 ; App constants.
@@ -62,19 +64,27 @@ _main:
 	LEA x0, sharedApplication.str
 	bl _sel_registerName
 	; `sel_registerName` cannot fail so do not check the return value.
-	str x0, STACK_SHARED_APPLICATION_ID
+	str x0, STACK_SHARED_APPLICATION_NAME
 	LOG_PTR_LN x0
 
 	; Register the `setActivationPolicy` name and store it.
 	LEA x0, setActivationPolicy.str
 	bl _sel_registerName
 	; `sel_registerName` cannot fail so do not check the return value.
-	str x0, STACK_ACTIVATION_POLICY_ID
+	str x0, STACK_ACTIVATION_POLICY_NAME
+	LOG_PTR_LN x0
+
+
+	; Register the `run` name and store it.
+	LEA x0, run.str
+	bl _sel_registerName
+	; `sel_registerName` cannot fail so do not check the return value.
+	str x0, STACK_RUN_NAME
 	LOG_PTR_LN x0
 
 	; Send the message to create an `NSApplication` instance and store its id.
 	ldr x0, STACK_NS_APPLICATION_CLASS
-	ldr x1, STACK_SHARED_APPLICATION_ID
+	ldr x1, STACK_SHARED_APPLICATION_NAME
 	bl _objc_msgSend
 	cmp x0, 0
 	b.eq .die
@@ -83,7 +93,7 @@ _main:
 
 	; Set the activation policy for our application to be allowed to have a window.
 	ldr x0, STACK_NS_APPLICATION_ID
-	ldr x1, STACK_ACTIVATION_POLICY_ID
+	ldr x1, STACK_ACTIVATION_POLICY_NAME
 	mov x2, #NSApplicationActivationPolicyRegular
 	bl _objc_msgSend
 	cmp x0, 0
@@ -91,8 +101,16 @@ _main:
 	; do not store the result.
 
 
+	; Send the message to run.
+	ldr x0, STACK_NS_APPLICATION_ID
+	ldr x1, STACK_RUN_NAME
+	bl _objc_msgSend
+	cmp x0, 0
+	b.eq .die
+	
 
 
+	; the end
 	LEA x0, OK.str
 	bl _puts
 
