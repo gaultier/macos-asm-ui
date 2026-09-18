@@ -20,9 +20,12 @@
 #define STACK_NS_BUTTON_CLASS 104
 #define STACK_INIT_NAME 112
 #define STACK_NS_BUTTON_ID 120
+#define STACK_STRING_WITH_UTF8_STRING_NAME 128
+#define STACK_NS_STRING_CLASS 136
+#define STACK_SET_TITLE_NAME 144
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_NS_BUTTON_ID
+#define STACK_LAST_SLOT STACK_SET_TITLE_NAME
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -86,8 +89,12 @@ RECT: .double 100.0, 100.0, 400.0, 300.0    ; x, y, width, height
 NSApplication.str: .asciz "NSApplication"
 NSWindow.str: .asciz "NSWindow"
 NSButton.str: .asciz "NSButton"
+NSString.str: .asciz "NSString"
+stringWithUTF8String.str: .asciz "stringWithUTF8String:"
 alloc.str: .asciz "alloc"
 init.str: .asciz "init"
+setTitle.str: .asciz "setTitle:"
+Hello.str: .asciz "Hello"
 initWithContentRect.str: .asciz "initWithContentRect:styleMask:backing:defer:"
 sharedApplication.str: .asciz "sharedApplication"
 setActivationPolicy.str: .asciz "setActivationPolicy:"
@@ -203,6 +210,21 @@ _main:
 	str x0, [sp, #STACK_NS_BUTTON_ID]
 	
 
+  ; Register name.
+	SEL_REGISTER_NAME setTitle.str
+	str x0, [sp, #STACK_SET_TITLE_NAME]
+	LOG_PTR_LN x0
+
+  ; Register name.
+	SEL_REGISTER_NAME stringWithUTF8String.str
+	str x0, [sp, #STACK_STRING_WITH_UTF8_STRING_NAME]
+	LOG_PTR_LN x0
+
+
+	; Locate `NSString` class and store it.
+	OBJC_GET_CLASS NSString.str
+	str x0, [sp, #STACK_NS_STRING_CLASS]
+	LOG_PTR_LN x0
 
 	; Show the window. -makeKeyAndOrderFront: returns void, so do NOT nil-check x0.
 	SEL_REGISTER_NAME makeKeyAndOrderFront.str
