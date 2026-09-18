@@ -1,5 +1,12 @@
 ; clang window.s -framework Cocoa
 
+#define STACK_SIZE 64
+#define STACK_SCRATCH 0
+#define STACK_NS_APPLICATION_CLASS 8
+#define STACK_SHARED_APPLICATION_ID 16
+#define STACK_ACTIVATION_POLICY_ID 24
+#define STACK_NS_APPLICATION_ID 32
+
 .macro LEA reg, sym
       adrp \reg, \sym@PAGE
       add  \reg, \reg, \sym@PAGEOFF
@@ -38,7 +45,7 @@ FMT_PTR.str: .asciz "%#llx\n"
 
 .global _main
 _main:
-	sub sp, sp, #64 ; 16B saved pair!
+	sub sp, sp, #STACK_SIZE ; 16B saved pair!
 	stp x29, x30, [sp, #48]  ; save frame pointer + return address
 	add x29, sp, #48         ; establish new frame pointer
 
@@ -90,7 +97,7 @@ _main:
 
 	mov w0, #0
 	ldp x29, x30, [sp, #48] ; restore frame pointer and return address.
-	add sp, sp, #64 ; reset frame pointer.
+	add sp, sp, #STACK_SIZE ; reset frame pointer.
 	ret
 
 
@@ -99,5 +106,5 @@ _main:
 	bl _puts
 	mov w0, #1
 	ldp x29, x30, [sp, #48] ; restore frame pointer and return address.
-	add sp, sp, #64 ; reset frame pointer.
+	add sp, sp, #STACK_SIZE ; reset frame pointer.
 	ret
