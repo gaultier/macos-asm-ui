@@ -13,9 +13,10 @@
 #define STACK_NS_WINDOW_NAME 48
 #define STACK_ALLOC_NAME 56
 #define STACK_NS_WINDOW_CLASS 64
+#define STACK_NS_WINDOW_ID 72
 
 ; Highest slot in use; must stay below the saved x29/x30 pair.
-#define STACK_LAST_SLOT STACK_NS_WINDOW_CLASS
+#define STACK_LAST_SLOT STACK_NS_WINDOW_ID
 #if STACK_LAST_SLOT + 8 > STACK_SIZE - STACK_FUNCTION_SAVE
 #error "locals overflow into the saved frame pointer"
 #endif
@@ -142,6 +143,12 @@ _main:
 	; Locate `NSWindow` class and store it.
 	OBJC_GET_CLASS NSWindow.str
 	str x0, [sp, #STACK_NS_WINDOW_CLASS]
+	LOG_PTR_LN x0
+
+
+	; Create a `NSWindow` instance.
+	OBJC_MSG_SEND_2 STACK_NS_WINDOW_CLASS, STACK_ALLOC_NAME
+	str x0, [sp, #STACK_NS_WINDOW_ID]
 	LOG_PTR_LN x0
 
 
